@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>算盘模拟器</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f5f0e6;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #8b5a2b;
+            font-size: 2rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input {
+            padding: 10px;
+            border: 2px solid #8b5a2b;
+            border-radius: 5px;
+            font-size: 1rem;
+            width: 150px;
+            text-align: center;
+        }
+
+        button {
+            background-color: #8b5a2b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            background-color: #6b4423;
+        }
+
+        .abacus {
+            position: relative;
+            width: 100%;
+            max-width: 850px;
+            margin: 0 auto;
+            background-color: #d9ad77;
+            border: 15px solid #9c6b30;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            padding: 15px;
+            overflow-x: auto;
+        }
+
+        .abacus-inner {
+            min-width: 700px; /* 确保有足够宽度容纳更多位数 */
+        }
+
+        /* 增强的横梁设计 */
+        .beam-container {
+            position: relative;
+            margin: 20px 0;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .beam {
+            position: relative;
+            height: 18px;
+            width: 100%;
+            background: linear-gradient(to bottom, #a06b2d, #8b5a2b, #a06b2d);
+            border-radius: 5px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            border-top: 2px solid #c49a6c;
+            border-bottom: 2px solid #6b4423;
+        }
+
+        /* 天珠和地珠标签 */
+        .beam-label {
+            position: absolute;
+            background-color: #8b5a2b;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+        }
+
+        .heaven-label {
+            top: -25px;
+            left: 10px;
+        }
+
+        .earth-label {
+            bottom: -25px;
+            right: 10px;
+        }
+
+        .rods {
+            display: flex;
+            justify-content: space-evenly;
+            height: 330px;
+            position: relative;
+        }
+
+        .rod {
+            position: relative;
+            width: 5px;
+            background-color: #8b5a2b;
+            height: 100%;
+            margin: 0 auto;
+            z-index: 5;
+        }
+
+        .bead {
+            position: absolute;
+            width: 40px; /* 稍微缩小珠子宽度以适应更多位数 */
+            height: 25px;
+            background: linear-gradient(to bottom, #f0d7a8, #c49a6c);
+            border-radius: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: pointer;
+            z-index: 15;
+            box-shadow: inset 0 -2px 5px rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.2s ease;
+        }
+
+        .bead::after {
+            content: "";
+            width: 20px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            position: absolute;
+            top: 5px;
+        }
+
+        .bead:hover {
+            filter: brightness(1.1);
+        }
+
+        .bead.active {
+            background: linear-gradient(to bottom, #e0c797, #b48a5c);
+        }
+
+        /* 天珠样式调整 */
+        .heaven {
+            top: 10px;
+            background: linear-gradient(to bottom, #f0d7a8, #e6b56c);
+        }
+
+        .heaven:hover {
+            background: linear-gradient(to bottom, #f5e0b8, #edc27c);
+        }
+
+        .heaven.active {
+            background: linear-gradient(to bottom, #e6b56c, #d9a25a);
+        }
+
+        .heaven.heaven-1 {
+            top: 45px;
+        }
+
+        /* 地珠样式调整 */
+        .earth {
+            background: linear-gradient(to bottom, #e6c89f, #c49a6c);
+        }
+
+        .earth:hover {
+            background: linear-gradient(to bottom, #ecd3af, #d1a77c);
+        }
+
+        .earth.active {
+            background: linear-gradient(to bottom, #d1a77c, #b48a5c);
+        }
+
+        .earth.earth-0 {
+            bottom: 150px; /* 最靠近横梁的珠子 */
+        }
+
+        .earth.earth-1 {
+            bottom: 115px;
+        }
+
+        .earth.earth-2 {
+            bottom: 80px;
+        }
+
+        .earth.earth-3 {
+            bottom: 45px;
+        }
+
+        .earth.earth-4 {
+            bottom: 10px; /* 最远离横梁的珠子 */
+        }
+
+        .value-display {
+            text-align: center;
+            font-size: 2rem;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #8b5a2b;
+        }
+
+        .instructions {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .instructions h2 {
+            color: #8b5a2b;
+            margin-bottom: 10px;
+        }
+
+        .instructions p {
+            line-height: 1.6;
+        }
+
+        /* 添加位值指示 */
+        .digit-indicators {
+            display: flex;
+            justify-content: space-evenly;
+            margin-top: 10px;
+            font-weight: bold;
+            color: #8b5a2b;
+            padding: 0 5px;
+            min-width: 700px;
+        }
+
+        .digit-indicator {
+            width: 40px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .input-group {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .abacus {
+                padding: 10px;
+                border-width: 10px;
+            }
+
+            .bead {
+                width: 35px;
+                height: 20px;
+            }
+
+            .bead::after {
+                width: 18px;
+                height: 10px;
+                top: 4px;
+            }
+
+            .heaven.heaven-1 {
+                top: 30px;
+            }
+
+            .earth.earth-0 {
+                bottom: 125px;
+            }
+
+            .earth.earth-1 {
+                bottom: 95px;
+            }
+
+            .earth.earth-2 {
+                bottom: 65px;
+            }
+
+            .earth.earth-3 {
+                bottom: 35px;
+            }
+
+            .earth.earth-4 {
+                bottom: 10px;
+            }
+            
+            .beam-label {
+                font-size: 0.7rem;
+                padding: 2px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>算盘模拟器</h1>
+        
+        <div class="controls">
+            <button id="reset-button">重置算盘</button>
+            <button id="example-button">示例: 1234567</button>
+            <div class="input-group">
+                <input type="number" id="number-input" placeholder="输入数字" min="0">
+                <button id="show-number-button">显示数字</button>
+            </div>
+        </div>
+        
+        <div class="abacus">
+            <div class="abacus-inner">
+                <div class="rods" id="rods">
+                    <!-- 算盘珠子将通过JavaScript动态生成 -->
+                </div>
+                <div class="digit-indicators" id="digit-indicators">
+                    <!-- 位值指示器将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="value-display" id="value-display">0</div>
+        
+        <div class="instructions">
+            <h2>使用说明</h2>
+            <p>点击珠子使其移动。顶部的珠子(天珠)每个代表5，底部的珠子(地珠)每个代表1。<br>
+            从右到左分别表示个位、十位、百位等。您也可以直接输入数字并点击"显示数字"按钮。</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 配置参数
+            const config = {
+                rods: 12,           // 增加位数到12位
+                earthBeads: 5,      // 每列下方珠子数(地珠)
+                heavenBeads: 2,     // 每列上方珠子数(天珠)
+                beadMovementDistance: 30  // 珠子移动的距离(px)
+            };
+            
+            const rodsContainer = document.getElementById('rods');
+            const digitIndicatorsContainer = document.getElementById('digit-indicators');
+            const valueDisplay = document.getElementById('value-display');
+            const resetButton = document.getElementById('reset-button');
+            const exampleButton = document.getElementById('example-button');
+            const numberInput = document.getElementById('number-input');
+            const showNumberButton = document.getElementById('show-number-button');
+            
+            // 创建算盘结构
+            function createAbacus() {
+                rodsContainer.innerHTML = '';
+                digitIndicatorsContainer.innerHTML = '';
+                
+                // 创建横梁(天地珠分隔线) - 增强版
+                const beamContainer = document.createElement('div');
+                beamContainer.className = 'beam-container';
+                
+                const beam = document.createElement('div');
+                beam.className = 'beam';
+                
+                // 添加天珠标签
+                const heavenLabel = document.createElement('div');
+                heavenLabel.className = 'beam-label heaven-label';
+                heavenLabel.textContent = '天珠';
+                
+                // 添加地珠标签
+                const earthLabel = document.createElement('div');
+                earthLabel.className = 'beam-label earth-label';
+                earthLabel.textContent = '地珠';
+                
+                beamContainer.appendChild(beam);
+                beamContainer.appendChild(heavenLabel);
+                beamContainer.appendChild(earthLabel);
+                
+                rodsContainer.appendChild(beamContainer);
+                
+                // 创建算盘的列和珠子
+                for (let i = 0; i < config.rods; i++) {
+                    const rod = document.createElement('div');
+                    rod.className = 'rod';
+                    rod.dataset.position = i;
+                    
+                    // 创建天珠(上方珠子)
+                    for (let h = 0; h < config.heavenBeads; h++) {
+                        const bead = document.createElement('div');
+                        bead.className = `bead heaven heaven-${h}`;
+                        bead.dataset.rod = i;
+                        bead.dataset.type = 'heaven';
+                        bead.dataset.index = h;
+                        bead.dataset.active = 'false';
+                        rod.appendChild(bead);
+                    }
+                    
+                    // 创建地珠(下方珠子) - 从上到下创建，索引0是最靠近横梁的
+                    for (let e = 0; e < config.earthBeads; e++) {
+                        const bead = document.createElement('div');
+                        bead.className = `bead earth earth-${e}`;
+                        bead.dataset.rod = i;
+                        bead.dataset.type = 'earth';
+                        bead.dataset.index = e;
+                        bead.dataset.active = 'false';
+                        rod.appendChild(bead);
+                    }
+                    
+                    rodsContainer.appendChild(rod);
+                    
+                    // 添加位值指示器
+                    const indicator = document.createElement('div');
+                    indicator.className = 'digit-indicator';
+                    
+                    // 确定位值名称
+                    const position = config.rods - 1 - i;
+                    let positionName;
+                    
+                    if (position === 0) positionName = "个";
+                    else if (position === 1) positionName = "十";
+                    else if (position === 2) positionName = "百";
+                    else if (position === 3) positionName = "千";
+                    else if (position === 4) positionName = "万";
+                    else if (position === 5) positionName = "十万";
+                    else if (position === 6) positionName = "百万";
+                    else if (position === 7) positionName = "千万";
+                    else if (position === 8) positionName = "亿";
+                    else if (position === 9) positionName = "十亿";
+                    else if (position === 10) positionName = "百亿";
+                    else if (position === 11) positionName = "千亿";
+                    else positionName = `10<sup>${position}</sup>`;
+                    
+                    indicator.innerHTML = positionName;
+                    digitIndicatorsContainer.appendChild(indicator);
+                }
+                
+                // 添加珠子点击事件
+                const beads = document.querySelectorAll('.bead');
+                beads.forEach(bead => {
+                    bead.addEventListener('click', toggleBead);
+                });
+                
+                updateDisplayValue();
+            }
+            
+            // 切换珠子状态
+            function toggleBead(event) {
+                const bead = event.currentTarget;
+                const rodIndex = parseInt(bead.dataset.rod);
+                const beadType = bead.dataset.type;
+                const beadIndex = parseInt(bead.dataset.index);
+                
+                if (beadType === 'heaven') {
+                    // 天珠逻辑
+                    // 索引0是最上面的珠子，索引大的珠子更靠近横梁
+                    const allBeadsInRod = Array.from(document.querySelectorAll(`.bead[data-rod="${rodIndex}"][data-type="heaven"]`))
+                        .sort((a, b) => parseInt(a.dataset.index) - parseInt(b.dataset.index));
+                    
+                    const isActive = bead.dataset.active === 'true';
+                    
+                    if (isActive) {
+                        // 如果点击的珠子是活动的，将它和所有"上面"的珠子设为非活动
+                        // (即索引小于或等于当前珠子索引的所有珠子)
+                        for (let i = 0; i <= beadIndex; i++) {
+                            const currentBead = allBeadsInRod[i];
+                            currentBead.dataset.active = 'false';
+                            currentBead.classList.remove('active');
+                            currentBead.style.transform = 'translateX(-50%)';
+                        }
+                    } else {
+                        // 如果点击的珠子是非活动的，将它和所有"下面"的珠子设为活动
+                        // (即索引大于或等于当前珠子索引的所有珠子)
+                        for (let i = beadIndex; i < allBeadsInRod.length; i++) {
+                            const currentBead = allBeadsInRod[i];
+                            currentBead.dataset.active = 'true';
+                            currentBead.classList.add('active');
+                            currentBead.style.transform = `translateX(-50%) translateY(${config.beadMovementDistance}px)`;
+                        }
+                    }
+                } else {
+                    // 地珠逻辑
+                    // 索引0是最靠近横梁的珠子(珠子视觉上位置最高)，索引增加表示珠子位置越低(越远离横梁)
+                    const allBeadsInRod = Array.from(document.querySelectorAll(`.bead[data-rod="${rodIndex}"][data-type="earth"]`))
+                        .sort((a, b) => parseInt(a.dataset.index) - parseInt(b.dataset.index));
+                    
+                    const isActive = bead.dataset.active === 'true';
+                    
+                    if (isActive) {
+                        // 如果点击的珠子是活动的，将它和所有"下面"的珠子设为非活动
+                        // (即索引大于或等于当前珠子索引的所有珠子)
+                        for (let i = beadIndex; i < allBeadsInRod.length; i++) {
+                            const currentBead = allBeadsInRod[i];
+                            currentBead.dataset.active = 'false';
+                            currentBead.classList.remove('active');
+                            currentBead.style.transform = 'translateX(-50%)';
+                        }
+                    } else {
+                        // 如果点击的珠子是非活动的，将它和所有"上面"的珠子设为活动
+                        // (即索引小于或等于当前珠子索引的所有珠子)
+                        for (let i = 0; i <= beadIndex; i++) {
+                            const currentBead = allBeadsInRod[i];
+                            currentBead.dataset.active = 'true';
+                            currentBead.classList.add('active');
+                            currentBead.style.transform = `translateX(-50%) translateY(-${config.beadMovementDistance}px)`;
+                        }
+                    }
+                }
+                
+                updateDisplayValue();
+            }
+            
+            // 计算并更新显示的值
+            function updateDisplayValue() {
+                let totalValue = 0;
+                
+                for (let i = 0; i < config.rods; i++) {
+                    let rodValue = 0;
+                    
+                    // 计算天珠的值
+                    const heavenBeads = document.querySelectorAll(`.bead[data-rod="${i}"][data-type="heaven"][data-active="true"]`);
+                    rodValue += heavenBeads.length * 5;
+                    
+                    // 计算地珠的值
+                    const earthBeads = document.querySelectorAll(`.bead[data-rod="${i}"][data-type="earth"][data-active="true"]`);
+                    rodValue += earthBeads.length;
+                    
+                    // 根据位置添加到总值
+                    totalValue += rodValue * Math.pow(10, config.rods - 1 - i);
+                }
+                
+                valueDisplay.textContent = totalValue.toLocaleString();
+            }
+            
+            // 重置算盘
+            function resetAbacus() {
+                const beads = document.querySelectorAll('.bead');
+                beads.forEach(bead => {
+                    bead.dataset.active = 'false';
+                    bead.classList.remove('active');
+                    bead.style.transform = 'translateX(-50%)';
+                });
+                
+                updateDisplayValue();
+            }
+            
+            // 设置值到算盘上
+            function setValueOnAbacus(value) {
+                resetAbacus();
+                const digits = value.toString().split('').map(Number);
+                
+                // 确保有足够的列来表示数值
+                if (digits.length > config.rods) {
+                    alert(`数值超出算盘范围，最大支持${config.rods}位数`);
+                    return false;
+                }
+                
+                // 从右到左设置每一位
+                for (let i = 0; i < digits.length; i++) {
+                    const rodIndex = config.rods - 1 - i;
+                    const digit = digits[digits.length - 1 - i];
+                    
+                    // 设置地珠
+                    const earthBeads = Array.from(document.querySelectorAll(`.bead[data-rod="${rodIndex}"][data-type="earth"]`))
+                        .sort((a, b) => parseInt(a.dataset.index) - parseInt(b.dataset.index));
+                    const earthCount = digit % 5;
+                    
+                    // 激活需要的地珠数量
+                    for (let j = 0; j < earthBeads.length; j++) {
+                        if (j < earthCount) {
+                            earthBeads[j].dataset.active = 'true';
+                            earthBeads[j].classList.add('active');
+                            earthBeads[j].style.transform = `translateX(-50%) translateY(-${config.beadMovementDistance}px)`;
+                        } else {
+                            earthBeads[j].dataset.active = 'false';
+                            earthBeads[j].classList.remove('active');
+                            earthBeads[j].style.transform = 'translateX(-50%)';
+                        }
+                    }
+                    
+                    // 设置天珠
+                    const heavenBeads = Array.from(document.querySelectorAll(`.bead[data-rod="${rodIndex}"][data-type="heaven"]`))
+                        .sort((a, b) => parseInt(a.dataset.index) - parseInt(b.dataset.index));
+                    const heavenCount = Math.floor(digit / 5);
+                    
+                    // 激活需要的天珠数量
+                    for (let j = 0; j < heavenBeads.length; j++) {
+                        if (j >= heavenBeads.length - heavenCount) {
+                            heavenBeads[j].dataset.active = 'true';
+                            heavenBeads[j].classList.add('active');
+                            heavenBeads[j].style.transform = `translateX(-50%) translateY(${config.beadMovementDistance}px)`;
+                        } else {
+                            heavenBeads[j].dataset.active = 'false';
+                            heavenBeads[j].classList.remove('active');
+                            heavenBeads[j].style.transform = 'translateX(-50%)';
+                        }
+                    }
+                }
+                
+                updateDisplayValue();
+                return true;
+            }
+            
+            // 设置示例数值
+            function setExampleValue() {
+                setValueOnAbacus(1234567);
+            }
+            
+            // 显示输入的数字
+            function showInputNumber() {
+                const inputValue = numberInput.value;
+                
+                if (!inputValue) {
+                    alert('请输入一个数字');
+                    return;
+                }
+                
+                const numValue = parseInt(inputValue);
+                
+                if (isNaN(numValue)) {
+                    alert('请输入有效的数字');
+                    return;
+                }
+                
+                if (numValue < 0) {
+                    alert('目前只支持非负整数');
+                    return;
+                }
+                
+                setValueOnAbacus(numValue);
+            }
+            
+            // 绑定事件
+            resetButton.addEventListener('click', resetAbacus);
+            exampleButton.addEventListener('click', setExampleValue);
+            showNumberButton.addEventListener('click', showInputNumber);
+            numberInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    showInputNumber();
+                }
+            });
+            
+            // 初始化算盘
+            createAbacus();
+        });
+    </script>
+</body>
+</html>
